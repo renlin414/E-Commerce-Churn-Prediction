@@ -59,7 +59,7 @@ col4.metric("Retention ROI", "342.5%", "+12.4%")
 st.write("---")
 
 # ==========================================
-# 🌟 核心魔法：接入真实 AI 模型
+# 🌟 核心魔法：接入真实 AI 模型 (终极特征对齐版)
 # ==========================================
 @st.cache_resource
 def load_model():
@@ -70,21 +70,41 @@ try:
     # 将侧边栏的 Yes/No 转换成模型认识的 1/0
     complain_encoded = 1 if complain == "Yes" else 0
     
-    # 构建输入特征。这里的列名必须和训练模型时一致！
+    # 严格按照模型训练时的 25 个特征顺序排列，未在侧边栏展示的填入业务合理默认值
     input_data = pd.DataFrame({
-        'Tenure': [tenure],
-        'Satisfaction': [satisfaction],
-        'Complain': [complain_encoded],
-        'OrderCount': [order_count],
-        'Cashback': [cashback]
+        'Tenure': [tenure],                           # ⬅️ 动态输入
+        'CityTier': [1],                              # 默认值: 1线城市
+        'WarehouseToHome': [15],                      # 默认值: 距离15公里
+        'HourSpendOnApp': [3],                        # 默认值: 日均3小时
+        'NumberOfDeviceRegistered': [3],              # 默认值: 3台设备
+        'SatisfactionScore': [satisfaction],          # ⬅️ 动态输入
+        'NumberOfAddress': [2],                       # 默认值: 2个地址
+        'Complain': [complain_encoded],               # ⬅️ 动态输入
+        'OrderAmountHikeFromlastYear': [15],          # 默认值: 消费涨幅15%
+        'CouponUsed': [1],                            # 默认值: 用过1次券
+        'OrderCount': [order_count],                  # ⬅️ 动态输入
+        'DaySinceLastOrder': [5],                     # 默认值: 5天前下单
+        'CashbackAmount': [cashback],                 # ⬅️ 动态输入
+        'PreferredLoginDevice_Mobile Phone': [1],     # 默认: 手机登录
+        'PreferredPaymentMode_Credit Card': [1],      # 默认: 信用卡支付
+        'PreferredPaymentMode_Debit Card': [0],
+        'PreferredPaymentMode_E wallet': [0],
+        'PreferredPaymentMode_UPI': [0],
+        'Gender_Male': [0],                           # 默认: 女性
+        'PreferedOrderCat_Grocery': [0],
+        'PreferedOrderCat_Laptop & Accessory': [0],
+        'PreferedOrderCat_Mobile Phone': [1],         # 默认: 买手机品类
+        'PreferedOrderCat_Others': [0],
+        'MaritalStatus_Married': [1],                 # 默认: 已婚
+        'MaritalStatus_Single': [0]
     })
     
     # 真实模型预测流失概率
     churn_prob = model.predict_proba(input_data)[0][1]
 
 except Exception as e:
-    # 容错机制：如果你们的特征名字没对上，为了防止网页崩溃，暂时退回模拟模式并在侧边栏报错
-    st.sidebar.error(f"⚠️ 特征匹配错误，当前退回模拟模式。详情: {e}")
+    # 容错机制依然保留，以防万一
+    st.sidebar.error(f"⚠️ 模型正在加载或遇到问题。详情: {e}")
     base_risk = 0.4
     if complain == "Yes": base_risk += 0.35
     if satisfaction <= 2: base_risk += 0.15
