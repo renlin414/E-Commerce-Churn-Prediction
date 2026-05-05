@@ -47,7 +47,7 @@ with st.sidebar:
     st.info("🟢 **System:** Online\n\n🛡️ **Data Sec:** Encrypted\n\n🧠 **Engine:** Real Random Forest")
 
 # --- 3. 页面大标题 & 商业大盘 ---
-st.markdown('<div class="gradient-text">Zeoniq CRM Intelligence Hub</div>', unsafe_allow_html=True)
+st.markdown('<div class="gradient-text">E-Commerce Intelligence Hub</div>', unsafe_allow_html=True)
 st.caption(f"📍 Geospatial Region: Klang Valley Sector &nbsp;&nbsp;|&nbsp;&nbsp; ⏱️ Last Sync: {datetime.now().strftime('%Y-%m-%d %H:%M')}")
 st.write("")
 
