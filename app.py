@@ -5,13 +5,13 @@ import time
 import plotly.graph_objects as go
 import plotly.express as px
 from datetime import datetime
+import joblib  # 🌟 新增：用来加载机器学习模型的库
 
 # --- 1. 全局极致 UI 配置 ---
 st.set_page_config(page_title="Zeoniq AI | Churn Predictor", page_icon="🌌", layout="wide", initial_sidebar_state="expanded")
 
 st.markdown("""
 <style>
-    /* 完美排版的渐变色标题 */
     .block-container { padding-top: 3rem; }
     .gradient-text {
         font-weight: 900; text-align: left;
@@ -44,7 +44,7 @@ with st.sidebar:
     cashback = st.slider("💰 Cashback Amount ($)", 0, 500, 150)
     
     st.divider()
-    st.info("🟢 **System:** Online\n\n🛡️ **Data Sec:** Encrypted")
+    st.info("🟢 **System:** Online\n\n🛡️ **Data Sec:** Encrypted\n\n🧠 **Engine:** Real Random Forest")
 
 # --- 3. 页面大标题 & 商业大盘 ---
 st.markdown('<div class="gradient-text">Zeoniq CRM Intelligence Hub</div>', unsafe_allow_html=True)
@@ -58,13 +58,41 @@ col3.metric("LTV at Risk (MYR)", "RM 1.2M", "+RM 50K", delta_color="inverse")
 col4.metric("Retention ROI", "342.5%", "+12.4%")
 st.write("---")
 
-# 动态计算基础流失概率
-base_risk = 0.4
-if complain == "Yes": base_risk += 0.35
-if satisfaction <= 2: base_risk += 0.15
-if tenure > 24: base_risk -= 0.2
-if cashback > 200: base_risk -= 0.15
-churn_prob = max(0.02, min(0.98, base_risk + np.random.uniform(-0.05, 0.05)))
+# ==========================================
+# 🌟 核心魔法：接入真实 AI 模型
+# ==========================================
+@st.cache_resource
+def load_model():
+    return joblib.load("best_rf_model.pkl")
+
+try:
+    model = load_model()
+    # 将侧边栏的 Yes/No 转换成模型认识的 1/0
+    complain_encoded = 1 if complain == "Yes" else 0
+    
+    # 构建输入特征。这里的列名必须和训练模型时一致！
+    input_data = pd.DataFrame({
+        'Tenure': [tenure],
+        'Satisfaction': [satisfaction],
+        'Complain': [complain_encoded],
+        'OrderCount': [order_count],
+        'Cashback': [cashback]
+    })
+    
+    # 真实模型预测流失概率
+    churn_prob = model.predict_proba(input_data)[0][1]
+
+except Exception as e:
+    # 容错机制：如果你们的特征名字没对上，为了防止网页崩溃，暂时退回模拟模式并在侧边栏报错
+    st.sidebar.error(f"⚠️ 特征匹配错误，当前退回模拟模式。详情: {e}")
+    base_risk = 0.4
+    if complain == "Yes": base_risk += 0.35
+    if satisfaction <= 2: base_risk += 0.15
+    if tenure > 24: base_risk -= 0.2
+    if cashback > 200: base_risk -= 0.15
+    churn_prob = max(0.02, min(0.98, base_risk + np.random.uniform(-0.05, 0.05)))
+# ==========================================
+
 
 # --- 4. 五大终极展示模块 ---
 tab_predict, tab_whatif, tab_geo, tab_eda, tab_mlops = st.tabs([
@@ -75,7 +103,7 @@ tab_predict, tab_whatif, tab_geo, tab_eda, tab_mlops = st.tabs([
     "⚙️ MLOps Pipeline"
 ])
 
-# ================= TAB 1: 实时预测与 GenAI 诊断 (修复版) =================
+# ================= TAB 1: 实时预测与 GenAI 诊断 =================
 with tab_predict:
     c_chart, c_ai = st.columns([1, 1.2])
     
@@ -95,12 +123,10 @@ with tab_predict:
         fig_gauge.update_layout(height=280, margin=dict(l=10, r=10, t=30, b=10))
         st.plotly_chart(fig_gauge, use_container_width=True)
         
-        # 💥 恢复：预测按钮与气球动效
         if st.button("🚀 Execute Neural Prediction", use_container_width=True):
             st.toast("Connecting to Model Server...", icon="⏳")
             time.sleep(1)
             st.toast("Model Inference Completed!", icon="✅")
-            # 流失概率低于 40% 放气球，高于 60% 飘雪花警告
             if churn_prob < 0.4:
                 st.balloons()
             elif churn_prob > 0.6:
@@ -125,7 +151,6 @@ with tab_predict:
                 st.write_stream(stream_data)
 
     st.write("---")
-    # 💥 恢复：高危客户表格
     st.markdown("##### 🚨 Top 5 Customers at High Risk Today (Auto-detected)")
     mock_table = pd.DataFrame({
         "Customer ID": ["C-8910", "C-2291", "C-4412", "C-0912", "C-7741"],
@@ -165,7 +190,7 @@ with tab_whatif:
         st.metric("New Projected Churn Risk", f"{new_prob:.1%}", f"{(new_prob - churn_prob)*100:.1f}% vs Original", delta_color="inverse")
         st.success(f"**Business Value:** This intervention costs ${add_cashback} but saves an estimated LTV of $3,200.")
 
-# ================= TAB 3: 地理空间与马来西亚本地化数据 =================
+# ================= TAB 3: 地理空间 =================
 with tab_geo:
     st.markdown("#### 🗺️ Churn Heatmap: Klang Valley Sector")
     st.caption("Geospatial distribution of high-risk customers to optimize physical marketing campaigns.")
@@ -186,7 +211,7 @@ with tab_geo:
     fig_map.update_layout(height=400, margin={"r":0,"t":0,"l":0,"b":0})
     st.plotly_chart(fig_map, use_container_width=True)
 
-# ================= TAB 4: 深层分析与群组留存 (EDA) =================
+# ================= TAB 4: 深层分析 =================
 with tab_eda:
     c_trend, c_heat = st.columns(2)
     with c_trend:
@@ -205,7 +230,7 @@ with tab_eda:
         fig_heat.update_layout(height=350, margin=dict(l=0, r=0, t=30, b=0))
         st.plotly_chart(fig_heat, use_container_width=True)
 
-# ================= TAB 5: MLOps 管道与后台 (修复版上传交互) =================
+# ================= TAB 5: MLOps =================
 with tab_mlops:
     c_ops1, c_ops2 = st.columns([1.2, 1])
     with c_ops1:
@@ -219,19 +244,16 @@ with tab_mlops:
 [DEPLOYMENT] Streamlit Cloud integration successfully triggered.
         """, language="shell")
         
-        # 💥 恢复：完整的文件上传、加载进度条、结果表格与下载按钮
         st.markdown("##### 📤 Batch Inference CSV")
         uploaded_file = st.file_uploader("Upload E_Commerce_Test.csv to run bulk prediction", type=["csv"])
         
         if uploaded_file is not None:
             st.success("File uploaded! Processing batch predictions...")
-            # 模拟进度条
             progress_bar = st.progress(0)
             for percent_complete in range(100):
                 time.sleep(0.01)
                 progress_bar.progress(percent_complete + 1)
             
-            # 生成模拟的批量预测结果
             st.markdown("###### 📊 Batch Prediction Results:")
             mock_output = pd.DataFrame({
                 "CustomerID": ["C-1029", "C-8832", "C-9921", "C-1102", "C-3345"],
@@ -240,7 +262,6 @@ with tab_mlops:
             })
             st.dataframe(mock_output, use_container_width=True, hide_index=True)
             
-            # 提供下载预测报告的按钮
             st.download_button(
                 label="📥 Download Prediction Report",
                 data=mock_output.to_csv(index=False),
