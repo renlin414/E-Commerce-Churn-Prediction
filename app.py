@@ -63,7 +63,7 @@ st.write("---")
 # ==========================================
 @st.cache_resource
 def load_model():
-    return joblib.load("best_rf_model.pkl")
+    return joblib.load("best_rf_pipeline.pkl")
 
 try:
     model = load_model()
