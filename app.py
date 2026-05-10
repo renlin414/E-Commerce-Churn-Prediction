@@ -5,10 +5,10 @@ import time
 import plotly.graph_objects as go
 import plotly.express as px
 from datetime import datetime
-import joblib  # 🌟 新增：用来加载机器学习模型的库
+import joblib
 
 # --- 1. 全局极致 UI 配置 ---
-st.set_page_config(page_title="Zeoniq AI | Churn Predictor", page_icon="🌌", layout="wide", initial_sidebar_state="expanded")
+st.set_page_config(page_title="E-Commerce Intelligence Hub", page_icon="🌌", layout="wide", initial_sidebar_state="expanded")
 
 st.markdown("""
 <style>
@@ -38,10 +38,10 @@ with st.sidebar:
     st.divider()
     
     tenure = st.slider("📅 Tenure (Months)", 0, 72, 12)
-    satisfaction = st.selectbox("⭐ Satisfaction Score", [1, 2, 3, 4, 5], index=2)
-    complain = st.radio("⚠️ Recent Complain?", ["Yes", "No"])
-    order_count = st.number_input("📦 Monthly Orders", 0, 50, 4)
     cashback = st.slider("💰 Cashback Amount ($)", 0, 500, 150)
+    complain = st.radio("⚠️ Recent Complain?", ["Yes", "No"])
+    day_since_last_order = st.slider("⏱️ Days Since Last Order", 0, 30, 5)
+    satisfaction = st.selectbox("⭐ Satisfaction Score", [1, 2, 3, 4, 5], index=2)
     
     st.divider()
     st.info("🟢 **System:** Online\n\n🛡️ **Data Sec:** Encrypted\n\n🧠 **Engine:** Real Random Forest")
@@ -59,52 +59,48 @@ col4.metric("Retention ROI", "342.5%", "+12.4%")
 st.write("---")
 
 # ==========================================
-# 🌟 核心魔法：接入真实 AI 模型 (终极特征对齐版)
+# 🌟 核心魔法：接入真实 AI 模型
 # ==========================================
 @st.cache_resource
 def load_model():
-    return joblib.load("best_rf_pipeline.pkl")
+    return joblib.load("best_rf_pipeline.pkl") 
 
 try:
     model = load_model()
-    # 将侧边栏的 Yes/No 转换成模型认识的 1/0
     complain_encoded = 1 if complain == "Yes" else 0
     
-    # 严格按照模型训练时的 25 个特征顺序排列，未在侧边栏展示的填入业务合理默认值
     input_data = pd.DataFrame({
-        'Tenure': [tenure],                           # ⬅️ 动态输入
-        'CityTier': [1],                              # 默认值: 1线城市
-        'WarehouseToHome': [15],                      # 默认值: 距离15公里
-        'HourSpendOnApp': [3],                        # 默认值: 日均3小时
-        'NumberOfDeviceRegistered': [3],              # 默认值: 3台设备
-        'SatisfactionScore': [satisfaction],          # ⬅️ 动态输入
-        'NumberOfAddress': [2],                       # 默认值: 2个地址
-        'Complain': [complain_encoded],               # ⬅️ 动态输入
-        'OrderAmountHikeFromlastYear': [15],          # 默认值: 消费涨幅15%
-        'CouponUsed': [1],                            # 默认值: 用过1次券
-        'OrderCount': [order_count],                  # ⬅️ 动态输入
-        'DaySinceLastOrder': [5],                     # 默认值: 5天前下单
-        'CashbackAmount': [cashback],                 # ⬅️ 动态输入
-        'PreferredLoginDevice_Mobile Phone': [1],     # 默认: 手机登录
-        'PreferredPaymentMode_Credit Card': [1],      # 默认: 信用卡支付
+        'Tenure': [tenure],                           
+        'CityTier': [1],                              
+        'WarehouseToHome': [15],                      
+        'HourSpendOnApp': [3],                        
+        'NumberOfDeviceRegistered': [3],              
+        'SatisfactionScore': [satisfaction],          
+        'NumberOfAddress': [2],                       
+        'Complain': [complain_encoded],               
+        'OrderAmountHikeFromlastYear': [15],          
+        'CouponUsed': [1],                            
+        'OrderCount': [4],                            
+        'DaySinceLastOrder': [day_since_last_order],  
+        'CashbackAmount': [cashback],                 
+        'PreferredLoginDevice_Mobile Phone': [1],     
+        'PreferredPaymentMode_Credit Card': [1],      
         'PreferredPaymentMode_Debit Card': [0],
         'PreferredPaymentMode_E wallet': [0],
         'PreferredPaymentMode_UPI': [0],
-        'Gender_Male': [0],                           # 默认: 女性
+        'Gender_Male': [0],                           
         'PreferedOrderCat_Grocery': [0],
         'PreferedOrderCat_Laptop & Accessory': [0],
-        'PreferedOrderCat_Mobile Phone': [1],         # 默认: 买手机品类
+        'PreferedOrderCat_Mobile Phone': [1],         
         'PreferedOrderCat_Others': [0],
-        'MaritalStatus_Married': [1],                 # 默认: 已婚
+        'MaritalStatus_Married': [1],                 
         'MaritalStatus_Single': [0]
     })
     
-    # 真实模型预测流失概率
     churn_prob = model.predict_proba(input_data)[0][1]
 
 except Exception as e:
-    # 容错机制依然保留，以防万一
-    st.sidebar.error(f"⚠️ 模型正在加载或遇到问题。详情: {e}")
+    st.sidebar.error(f"⚠️ 模型加载或特征匹配错误。详情: {e}")
     base_risk = 0.4
     if complain == "Yes": base_risk += 0.35
     if satisfaction <= 2: base_risk += 0.15
@@ -112,7 +108,6 @@ except Exception as e:
     if cashback > 200: base_risk -= 0.15
     churn_prob = max(0.02, min(0.98, base_risk + np.random.uniform(-0.05, 0.05)))
 # ==========================================
-
 
 # --- 4. 五大终极展示模块 ---
 tab_predict, tab_whatif, tab_geo, tab_eda, tab_mlops = st.tabs([
@@ -158,11 +153,34 @@ with tab_predict:
         
         if st.button("Generate AI Insights", type="primary"):
             def stream_data():
-                risk = "High" if churn_prob > 0.5 else "Low"
-                action = "Immediate intervention required." if churn_prob > 0.5 else "Maintain current engagement strategy."
-                text = f"**Diagnostic Summary:** This customer exhibits a **{risk}** risk profile ({churn_prob:.1%} probability of churning). " \
-                       f"The primary driver is their recent complain status ('{complain}') combined with a satisfaction score of {satisfaction}/5. " \
-                       f"\n\n**Action Plan:** {action} We recommend offering a personalized cashback incentive to increase their LTV. "
+                # 💡 动态逻辑 1：根据输入参数生成完全不同的 AI 诊断文案
+                if churn_prob >= 0.6:
+                    risk_level = "High"
+                    urgency = "Immediate intervention required."
+                    if complain == "Yes":
+                        reason = f"an unresolved complain coupled with {day_since_last_order} days of inactivity."
+                        tactic = "Trigger an urgent Customer Success call to resolve the issue and issue a 'We Miss You' voucher."
+                    elif tenure < 6:
+                        reason = f"a lack of early engagement (Tenure: {tenure} months) despite cashback incentives."
+                        tactic = "Deploy the New-User Onboarding email sequence with an exclusive quick-win offer."
+                    else:
+                        reason = f"burnout symptoms. The customer has a long tenure but low recent activity."
+                        tactic = "Send a targeted push notification highlighting new premium products."
+                elif churn_prob <= 0.3:
+                    risk_level = "Low"
+                    urgency = "Maintain current engagement strategy."
+                    reason = f"strong brand loyalty, driven by a tenure of {tenure} months and high satisfaction."
+                    tactic = "Upsell premium features or invite them to the exclusive VIP Referral Program."
+                else:
+                    risk_level = "Moderate"
+                    urgency = "Monitor closely."
+                    reason = f"mixed signals (Satisfaction: {satisfaction}/5, Cashback received: ${cashback})."
+                    tactic = "A/B test personalized product recommendations to increase their monthly order frequency."
+
+                text = f"**Diagnostic Summary:** This customer exhibits a **{risk_level}** risk profile ({churn_prob:.1%} probability of churning). " \
+                       f"The primary driver is {reason} " \
+                       f"\n\n**Action Plan:** {urgency} {tactic}"
+                
                 for word in text.split(" "):
                     yield word + " "
                     time.sleep(0.04)
@@ -175,7 +193,7 @@ with tab_predict:
     mock_table = pd.DataFrame({
         "Customer ID": ["C-8910", "C-2291", "C-4412", "C-0912", "C-7741"],
         "Risk Level": ["94.2%", "91.5%", "89.0%", "85.4%", "82.1%"],
-        "Primary Driver": ["Recent Complain", "Low Satisfaction", "Zero Orders (3 Mo)", "Low Cashback", "High Distance"],
+        "Primary Driver": ["Recent Complain", "Low Satisfaction", "High Inactivity", "Low Cashback", "High Distance"],
         "Est. LTV Lost": ["$4,200", "$3,150", "$1,800", "$5,400", "$2,100"]
     })
     st.dataframe(mock_table, use_container_width=True, hide_index=True)
@@ -208,9 +226,14 @@ with tab_whatif:
         new_prob = max(0.01, new_prob)
         
         st.metric("New Projected Churn Risk", f"{new_prob:.1%}", f"{(new_prob - churn_prob)*100:.1f}% vs Original", delta_color="inverse")
-        st.success(f"**Business Value:** This intervention costs ${add_cashback} but saves an estimated LTV of $3,200.")
+        
+        # 💡 动态逻辑 2：动态计算该客户的预估终身价值 (LTV)
+        # 公式：基础 500 + 网龄增值 + 返现正反馈 - 距今未下单惩罚
+        dynamic_ltv = int(max(300, 500 + (tenure * 85) + (cashback * 1.5) - (day_since_last_order * 12)))
+        
+        st.success(f"**Business Value:** This intervention costs ${add_cashback} but helps secure an estimated Future LTV of **${dynamic_ltv:,.0f}**.")
 
-# ================= TAB 3: 地理空间 =================
+# ================= TAB 3: 地空间 =================
 with tab_geo:
     st.markdown("#### 🗺️ Churn Heatmap: Klang Valley Sector")
     st.caption("Geospatial distribution of high-risk customers to optimize physical marketing campaigns.")
