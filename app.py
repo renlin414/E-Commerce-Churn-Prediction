@@ -203,6 +203,7 @@ with tab_whatif:
     c_shap, c_sim = st.columns([1.2, 1])
     with c_shap:
         st.markdown("#### 🧠 Model Explainability (SHAP)")
+        # 这里的瀑布图逻辑保持不变
         shap_vals = [0.168, 0.35 if complain=="Yes" else -0.15, 0.15 if satisfaction<=2 else -0.1, -0.08 if tenure>12 else 0.12, churn_prob]
         fig_waterfall = go.Figure(go.Waterfall(
             orientation="h", measure=["absolute", "relative", "relative", "relative", "total"],
@@ -217,9 +218,11 @@ with tab_whatif:
         st.markdown("#### 🧪 Prescriptive Actions (What-If)")
         st.write("Simulate the impact of business interventions on this customer.")
         
+        # 模拟操作滑块
         add_cashback = st.slider("Increase Cashback By ($)", 0, 100, 20)
         resolve_issue = st.checkbox("Resolve Complain Instantly (Service Team Call)")
         
+        # 计算模拟后的新概率
         new_prob = churn_prob
         if resolve_issue and complain == "Yes": new_prob -= 0.30
         new_prob -= (add_cashback * 0.002)
@@ -227,10 +230,12 @@ with tab_whatif:
         
         st.metric("New Projected Churn Risk", f"{new_prob:.1%}", f"{(new_prob - churn_prob)*100:.1f}% vs Original", delta_color="inverse")
         
-        # 💡 动态逻辑 2：动态计算该客户的预估终身价值 (LTV)
-        # 公式：基础 500 + 网龄增值 + 返现正反馈 - 距今未下单惩罚
-        dynamic_ltv = int(max(300, 500 + (tenure * 85) + (cashback * 1.5) - (day_since_last_order * 12)))
+        # 💡 动态 LTV 引擎：将侧边栏基础值与模拟增量求和
+        # 这样当你拖动这个页面的滑块时，LTV 也会跟着变动
+        total_effective_cashback = cashback + add_cashback
+        dynamic_ltv = int(max(300, 500 + (tenure * 85) + (total_effective_cashback * 1.5) - (day_since_last_order * 12)))
         
+        # ✅ 修复排版：使用 \$ 避开 LaTeX 冲突，确保空格和数值正常显示
         st.success(f"**Business Value:** This intervention costs \${add_cashback} but helps secure an estimated Future LTV of **\${dynamic_ltv:,.0f}**.")
 # ================= TAB 3: 地空间 =================
 with tab_geo:
