@@ -231,8 +231,7 @@ with tab_whatif:
         # 公式：基础 500 + 网龄增值 + 返现正反馈 - 距今未下单惩罚
         dynamic_ltv = int(max(300, 500 + (tenure * 85) + (cashback * 1.5) - (day_since_last_order * 12)))
         
-        st.success(f"**Business Value:** This intervention costs ${add_cashback} but helps secure an estimated Future LTV of **${dynamic_ltv:,.0f}**.")
-
+        st.success(f"**Business Value:** This intervention costs \${add_cashback} but helps secure an estimated Future LTV of **\${dynamic_ltv:,.0f}**.")
 # ================= TAB 3: 地空间 =================
 with tab_geo:
     st.markdown("#### 🗺️ Churn Heatmap: Klang Valley Sector")
