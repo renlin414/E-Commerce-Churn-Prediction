@@ -7,7 +7,7 @@ import plotly.express as px
 from datetime import datetime
 import joblib
 
-# --- 1. 全局极致 UI 配置 ---
+
 st.set_page_config(page_title="E-Commerce Intelligence Hub", page_icon="🌌", layout="wide", initial_sidebar_state="expanded")
 
 st.markdown("""
@@ -30,7 +30,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# --- 2. 侧边栏：数字孪生控制中心 ---
+
 with st.sidebar:
     st.image("https://cdn-icons-png.flaticon.com/512/2083/2083213.png", width=60)
     st.markdown("### 🎛️ Digital Twin Engine")
@@ -46,7 +46,7 @@ with st.sidebar:
     st.divider()
     st.info("🟢 **System:** Online\n\n🛡️ **Data Sec:** Encrypted\n\n🧠 **Engine:** Real Random Forest")
 
-# --- 3. 页面大标题 & 商业大盘 ---
+
 st.markdown('<div class="gradient-text">E-Commerce Intelligence Hub</div>', unsafe_allow_html=True)
 st.caption(f"📍 Geospatial Region: Klang Valley Sector &nbsp;&nbsp;|&nbsp;&nbsp; ⏱️ Last Sync: {datetime.now().strftime('%Y-%m-%d %H:%M')}")
 st.write("")
@@ -58,9 +58,7 @@ col3.metric("LTV at Risk (MYR)", "RM 1.2M", "+RM 50K", delta_color="inverse")
 col4.metric("Retention ROI", "342.5%", "+12.4%")
 st.write("---")
 
-# ==========================================
-# 🌟 核心魔法：接入真实 AI 模型
-# ==========================================
+
 @st.cache_resource
 def load_model():
     return joblib.load("best_rf_pipeline.pkl") 
@@ -100,16 +98,14 @@ try:
     churn_prob = model.predict_proba(input_data)[0][1]
 
 except Exception as e:
-    st.sidebar.error(f"⚠️ 模型加载或特征匹配错误。详情: {e}")
+    st.sidebar.error(f"⚠️  {e}")
     base_risk = 0.4
     if complain == "Yes": base_risk += 0.35
     if satisfaction <= 2: base_risk += 0.15
     if tenure > 24: base_risk -= 0.2
     if cashback > 200: base_risk -= 0.15
     churn_prob = max(0.02, min(0.98, base_risk + np.random.uniform(-0.05, 0.05)))
-# ==========================================
 
-# --- 4. 五大终极展示模块 ---
 tab_predict, tab_whatif, tab_geo, tab_eda, tab_mlops = st.tabs([
     "🎯 Real-Time Prediction", 
     "🧪 What-If Simulation",
@@ -118,7 +114,7 @@ tab_predict, tab_whatif, tab_geo, tab_eda, tab_mlops = st.tabs([
     "⚙️ MLOps Pipeline"
 ])
 
-# ================= TAB 1: 实时预测与 GenAI 诊断 =================
+
 with tab_predict:
     c_chart, c_ai = st.columns([1, 1.2])
     
@@ -153,7 +149,7 @@ with tab_predict:
         
         if st.button("Generate AI Insights", type="primary"):
             def stream_data():
-                # 💡 动态逻辑 1：根据输入参数生成完全不同的 AI 诊断文案
+                
                 if churn_prob >= 0.6:
                     risk_level = "High"
                     urgency = "Immediate intervention required."
@@ -198,12 +194,12 @@ with tab_predict:
     })
     st.dataframe(mock_table, use_container_width=True, hide_index=True)
 
-# ================= TAB 2: 规范性分析 (What-If Simulation) & SHAP =================
+
 with tab_whatif:
     c_shap, c_sim = st.columns([1.2, 1])
     with c_shap:
         st.markdown("#### 🧠 Model Explainability (SHAP)")
-        # 这里的瀑布图逻辑保持不变
+
         shap_vals = [0.168, 0.35 if complain=="Yes" else -0.15, 0.15 if satisfaction<=2 else -0.1, -0.08 if tenure>12 else 0.12, churn_prob]
         fig_waterfall = go.Figure(go.Waterfall(
             orientation="h", measure=["absolute", "relative", "relative", "relative", "total"],
@@ -218,11 +214,11 @@ with tab_whatif:
         st.markdown("#### 🧪 Prescriptive Actions (What-If)")
         st.write("Simulate the impact of business interventions on this customer.")
         
-        # 模拟操作滑块
+      
         add_cashback = st.slider("Increase Cashback By ($)", 0, 100, 20)
         resolve_issue = st.checkbox("Resolve Complain Instantly (Service Team Call)")
         
-        # 计算模拟后的新概率
+       
         new_prob = churn_prob
         if resolve_issue and complain == "Yes": new_prob -= 0.30
         new_prob -= (add_cashback * 0.002)
@@ -230,14 +226,13 @@ with tab_whatif:
         
         st.metric("New Projected Churn Risk", f"{new_prob:.1%}", f"{(new_prob - churn_prob)*100:.1f}% vs Original", delta_color="inverse")
         
-        # 💡 动态 LTV 引擎：将侧边栏基础值与模拟增量求和
-        # 这样当你拖动这个页面的滑块时，LTV 也会跟着变动
+       
         total_effective_cashback = cashback + add_cashback
         dynamic_ltv = int(max(300, 500 + (tenure * 85) + (total_effective_cashback * 1.5) - (day_since_last_order * 12)))
         
-        # ✅ 修复排版：使用 \$ 避开 LaTeX 冲突，确保空格和数值正常显示
+       
         st.success(f"**Business Value:** This intervention costs \${add_cashback} but helps secure an estimated Future LTV of **\${dynamic_ltv:,.0f}**.")
-# ================= TAB 3: 地空间 =================
+
 with tab_geo:
     st.markdown("#### 🗺️ Churn Heatmap: Klang Valley Sector")
     st.caption("Geospatial distribution of high-risk customers to optimize physical marketing campaigns.")
@@ -258,7 +253,7 @@ with tab_geo:
     fig_map.update_layout(height=400, margin={"r":0,"t":0,"l":0,"b":0})
     st.plotly_chart(fig_map, use_container_width=True)
 
-# ================= TAB 4: 深层分析 =================
+
 with tab_eda:
     c_trend, c_heat = st.columns(2)
     with c_trend:
@@ -277,7 +272,7 @@ with tab_eda:
         fig_heat.update_layout(height=350, margin=dict(l=0, r=0, t=30, b=0))
         st.plotly_chart(fig_heat, use_container_width=True)
 
-# ================= TAB 5: MLOps =================
+
 with tab_mlops:
     c_ops1, c_ops2 = st.columns([1.2, 1])
     with c_ops1:
